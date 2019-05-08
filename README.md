@@ -1,2 +1,2 @@
-# myci
+# My Codeigniter
 My Codeigniter
