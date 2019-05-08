@@ -1,35 +1,54 @@
 <?php
-require __DIR__.'/vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 
-$dotenv = Dotenv\Dotenv::create(__DIR__);
-$dotenv->load();
+try {
+	$dotenv = Dotenv\Dotenv::create(__DIR__);
+	$dotenv->load();
+	$dotenv->required([
+		'ENVIRONMENT',
+		'SERVER_IP',
+		'PATH_APP',
+		'PATH_SYS',
+		'BASE_URL',
+		'BASE_URL_LOCAL'
+	])->notEmpty();
+	$dotenv->required([
+		'COOKIE_SCURE',
+		'COOKIE_SCURE_LOCAL'
+	])->isBoolean();
+} catch (Dotenv\Exception\InvalidFileException $e) {
+	echo $e->getMessage();
+	exit;
+} catch (Dotenv\Exception\InvalidPathException $e) {
+	echo $e->getMessage();
+	exit;
+} catch (Dotenv\Exception\ValidationException $e) {
+	echo $e->getMessage();
+	exit;
+}
 
 define('ENVIRONMENT', getenv('ENVIRONMENT'));
 
-switch (ENVIRONMENT)
-{
+switch (ENVIRONMENT) {
 	case 'development':
 		error_reporting(-1);
 		ini_set('display_errors', 1);
-	break;
+		break;
 
 	case 'production':
 		ini_set('display_errors', 0);
-		if (version_compare(PHP_VERSION, '5.3', '>='))
-		{
+		if (version_compare(PHP_VERSION, '5.3', '>=')) {
 			error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT & ~E_USER_NOTICE & ~E_USER_DEPRECATED);
-		}
-		else
-		{
+		} else {
 			error_reporting(E_ALL & ~E_NOTICE & ~E_STRICT & ~E_USER_NOTICE);
 		}
-	break;
+		break;
 
 	default:
 		header('HTTP/1.1 503 Service Unavailable.', TRUE, 503);
 		echo 'The application environment is not set correctly.';
 		exit(1);
-	break;
+		break;
 }
 
 switch (getHostByName(getHostName())) {
@@ -46,15 +65,14 @@ switch (getHostByName(getHostName())) {
 		define('DB_PASS', getenv('DB_PASS'));
 		define('DB_NAME', getenv('DB_NAME'));
 		break;
-	
+
 	default:
 		// Config
 		define('BASE_URL', getenv('BASE_URL_LOCAL'));
 		define('COOKIE_DOMAIN', getenv('COOKIE_DOMAIN_LOCAL'));
 		define('COOKIE_SCURE', getenv('COOKIE_SCURE_LOCAL'));
 		define('TESTING', TRUE);
-		// define('VIEWPATH_LOCAL', 'local'.DIRECTORY_SEPARATOR);
-		define('VIEWPATH_LOCAL', '');
+		define('VIEWPATH_LOCAL', 'local' . DIRECTORY_SEPARATOR);
 		// Database
 		define('DB_HOST', getenv('DB_HOST_LOCAL'));
 		define('DB_USER', getenv('DB_USER_LOCAL'));
@@ -67,93 +85,79 @@ $system_path = getenv('PATH_SYS');
 $application_folder = getenv('PATH_APP');
 $view_folder = '';
 
-if (defined('STDIN'))
-{
+if (defined('STDIN')) {
 	chdir(dirname(__FILE__));
 }
 
 if (($_temp = realpath($system_path)) !== FALSE) {
-	$system_path = $_temp.DIRECTORY_SEPARATOR;
-} else
-{
+	$system_path = $_temp . DIRECTORY_SEPARATOR;
+} else {
 	$system_path = strtr(
 		rtrim($system_path, '/\\'),
 		'/\\',
-		DIRECTORY_SEPARATOR.DIRECTORY_SEPARATOR
-	).DIRECTORY_SEPARATOR;
+		DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR
+	) . DIRECTORY_SEPARATOR;
 }
 
-if ( ! is_dir($system_path)) {
+if (!is_dir($system_path)) {
 	header('HTTP/1.1 503 Service Unavailable.', TRUE, 503);
-	echo 'Your system folder path does not appear to be set correctly. Please open the following file and correct this: '.pathinfo(__FILE__, PATHINFO_BASENAME);
+	echo 'Your system folder path does not appear to be set correctly. Please open the following file and correct this: ' . pathinfo(__FILE__, PATHINFO_BASENAME);
 	exit(3);
 }
 
 define('SELF', pathinfo(__FILE__, PATHINFO_BASENAME));
 define('BASEPATH', $system_path);
-define('FCPATH', dirname(__FILE__).DIRECTORY_SEPARATOR);
+define('FCPATH', dirname(__FILE__) . DIRECTORY_SEPARATOR);
 define('SYSDIR', basename(BASEPATH));
 
 if (is_dir($application_folder)) {
-	if (($_temp = realpath($application_folder)) !== FALSE)
-	{
+	if (($_temp = realpath($application_folder)) !== FALSE) {
 		$application_folder = $_temp;
-	}
-	else
-	{
+	} else {
 		$application_folder = strtr(
 			rtrim($application_folder, '/\\'),
 			'/\\',
-			DIRECTORY_SEPARATOR.DIRECTORY_SEPARATOR
+			DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR
 		);
 	}
-} elseif (is_dir(BASEPATH.$application_folder.DIRECTORY_SEPARATOR))
-{
-	$application_folder = BASEPATH.strtr(
+} elseif (is_dir(BASEPATH . $application_folder . DIRECTORY_SEPARATOR)) {
+	$application_folder = BASEPATH . strtr(
 		trim($application_folder, '/\\'),
 		'/\\',
-		DIRECTORY_SEPARATOR.DIRECTORY_SEPARATOR
+		DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR
 	);
-} else
-{
+} else {
 	header('HTTP/1.1 503 Service Unavailable.', TRUE, 503);
-	echo 'Your application folder path does not appear to be set correctly. Please open the following file and correct this: '.SELF;
+	echo 'Your application folder path does not appear to be set correctly. Please open the following file and correct this: ' . SELF;
 	exit(3);
 }
 
-define('APPPATH', $application_folder.DIRECTORY_SEPARATOR);
+define('APPPATH', $application_folder . DIRECTORY_SEPARATOR);
 
-if ( ! isset($view_folder[0]) && is_dir(APPPATH.'views'.DIRECTORY_SEPARATOR)) {
-	$view_folder = APPPATH.'views';
+if (!isset($view_folder[0]) && is_dir(APPPATH . 'views' . DIRECTORY_SEPARATOR)) {
+	$view_folder = APPPATH . 'views';
 } elseif (is_dir($view_folder)) {
-	if (($_temp = realpath($view_folder)) !== FALSE)
-	{
+	if (($_temp = realpath($view_folder)) !== FALSE) {
 		$view_folder = $_temp;
-	}
-	else
-	{
+	} else {
 		$view_folder = strtr(
 			rtrim($view_folder, '/\\'),
 			'/\\',
-			DIRECTORY_SEPARATOR.DIRECTORY_SEPARATOR
+			DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR
 		);
 	}
-}
-elseif (is_dir(APPPATH.$view_folder.DIRECTORY_SEPARATOR))
-{
-	$view_folder = APPPATH.strtr(
+} elseif (is_dir(APPPATH . $view_folder . DIRECTORY_SEPARATOR)) {
+	$view_folder = APPPATH . strtr(
 		trim($view_folder, '/\\'),
 		'/\\',
-		DIRECTORY_SEPARATOR.DIRECTORY_SEPARATOR
+		DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR
 	);
-}
-else
-{
+} else {
 	header('HTTP/1.1 503 Service Unavailable.', TRUE, 503);
-	echo 'Your view folder path does not appear to be set correctly. Please open the following file and correct this: '.SELF;
+	echo 'Your view folder path does not appear to be set correctly. Please open the following file and correct this: ' . SELF;
 	exit(3);
 }
 
-define('VIEWPATH', $view_folder.DIRECTORY_SEPARATOR.VIEWPATH_LOCAL);
+define('VIEWPATH', $view_folder . DIRECTORY_SEPARATOR . VIEWPATH_LOCAL);
 
-require_once BASEPATH.'core/CodeIgniter.php';
+require_once BASEPATH . 'core/CodeIgniter.php';
