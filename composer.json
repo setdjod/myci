@@ -1,7 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "require": {
-        "vlucas/phpdotenv": "^3.3",
-        "google/cloud": "^0.100.0"
+        "vlucas/phpdotenv": "^3.3"
     }
 }
